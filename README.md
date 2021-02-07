@@ -16,14 +16,24 @@ AntiDBG is designed to be *readable* so the user can learn about the techniques.
 ### The Gauntlet
 The Gauntlet is a simple application that runs each AntiDBG check one after the other. It's purpose is to test your ability to bypass the anti-debugging methods and make it to the end of The Gauntlet while running under a debugger.
 
-Want to make The Gauntlet *harder*? Undefine SHOW_DEBUG_MESSAGES (defined by default in antidbg.c). This option produces a message box when you get caught with information about the check that got you.
+Want to make The Gauntlet *harder*? Undefine SHOW_DEBUG_MESSAGES (defined by default in AntiDBG.cpp). This option produces a message box when you get caught with information about the check that got you.
 
-### Troubleshooting
-
-> Help! This thing won't compile!
-
-AntiDBG was developed using Microsoft Visual Studio 2015 building as Release x86. If you are getting compiler errors, ensure you are building for x86. Many of these methods *will work* on x64 however they may require modification where inline assembly is used. 
+### FAQ & Troubleshooting
 
 > Help! X method doesn't seem to work.
 
-Many anti-debugging checks focus on odd edge cases or very specific structures which may or may not be set on certain versions of Windows, or they may act differently under emulation. Some checks require the the debugger to step over the check, while others do not. All methods in AntiDBG have been tested under the conditions which they are designed work on Windows 10 64-bit. Most (if not all) should work on all over versions of Windows as well. AntiDBG shies away from checks which can only be used against specific debuggers or versions of Windows. 
+Many anti-debugging checks focus on odd edge cases. Some require you to single step past, some require a specific debugger to be used, some require you to pass the exception to the debugger, etc.
+
+All methods in AntiDBG have been tested under the conditions which they are designed work on Windows 10 64-bit. Most (if not all) should work on all other versions of Windows as well.
+
+> Help! This thing won't compile!
+
+AntiDBG was developed and tested using Microsoft Visual Studio 2019. As long as you're using 2019, please submit an issue with details and I'd be happy to help.
+
+> Why is x86 assembly inline while x64 variants are in a .asm file?
+
+Microsoft thought it would be a great idea to stop allowing developers to write inline assembly for x64. I don't know why, but the common reason I see cited around the internet is that developers suck at writing assembly and compilers are way better. While I don't disagree with this, I doubt that's the real reason. Whatever the reason, we now have to jump through hoops to do something even remotely similar. Huge thanks to [lallouslab](http://lallouslab.net/2016/01/11/introduction-to-writing-x64-assembly-in-visual-studio/) and [onipot](https://onipot.altervista.org/how-to-create-assembly-project-visual-studio-2019-64-bit/) for guiding me through this minefield.
+
+> I have more questions.
+
+I'd be happy to answer them! Please submit a GitHub issue with your questions and I'll try my best to help as soon as possible.
