@@ -1,0 +1,635 @@
+#include <Windows.h>
+#include "AntiDBG.h"
+
+#define SHOW_DEBUG_MESSAGES
+
+// =======================================================================
+// Debugging helper
+// =======================================================================
+void DBG_MSG(WORD dbg_code, const char* message)
+{
+#ifdef SHOW_DEBUG_MESSAGES
+    printf("[MSG-0x%X]: %s\n", dbg_code, message);
+    MessageBoxA(NULL, message, "GAME OVER!", 0);
+#endif
+}
+
+
+// =======================================================================
+// Memory Checks
+// These checks focus on Windows structures containing information which 
+// can reveal the presence of a debugger. 
+// =======================================================================
+
+void adbg_BeingDebuggedPEB(void)
+{
+    BOOL found = FALSE;
+
+#ifdef _WIN64
+    found = adbg_BeingDebuggedPEBx64();
+#else
+    _asm
+    {
+        xor eax, eax;			// clear eax
+        mov eax, fs: [0x30] ;	// Reference start of the PEB
+        mov eax, [eax + 0x02];	// PEB+2 points to BeingDebugged
+        and eax, 0xFF;			// only reference one byte
+        mov found, eax;			// Copy BeingDebugged into 'found'
+    }
+#endif
+
+    if (found)
+    {
+        DBG_MSG(DBG_BEINGEBUGGEDPEB, "Caught by BeingDebugged PEB check!");
+        exit(DBG_BEINGEBUGGEDPEB);
+    }
+}
+
+
+void adbg_CheckRemoteDebuggerPresent(void)
+{
+    HANDLE hProcess = INVALID_HANDLE_VALUE;
+    BOOL found = FALSE;
+
+    hProcess = GetCurrentProcess();
+    CheckRemoteDebuggerPresent(hProcess, &found);
+
+    if (found)
+    {
+        DBG_MSG(DBG_CHECKREMOTEDEBUGGERPRESENT, "Caught by CheckRemoteDebuggerPresent!");
+        exit(DBG_CHECKREMOTEDEBUGGERPRESENT);
+    }
+}
+
+
+void adbg_CheckWindowName(void)
+{
+    BOOL found = FALSE;
+    HANDLE hWindow = NULL;
+    const wchar_t* WindowClassNameIDA = L"Qt5QWindowIcon";	// IDA Pro
+    const wchar_t* WindowClassNameOlly = L"OLLYDBG";		// OllyDbg
+    const wchar_t* WindowClassNameImmunity = L"ID";			// Immunity Debugger
+
+    // Check for IDA Pro
+    hWindow = FindWindow(WindowClassNameIDA, 0);
+    if (hWindow)
+    {
+        found = TRUE;
+    }
+
+    // Check for OllyDBG
+    hWindow = FindWindow(WindowClassNameOlly, 0);
+    if (hWindow)
+    {
+        found = TRUE;
+    }
+
+    // Check for Immunity
+    hWindow = FindWindow(WindowClassNameImmunity, 0);
+    if (hWindow)
+    {
+        found = TRUE;
+    }
+
+    if (found)
+    {
+        DBG_MSG(DBG_FINDWINDOW, "Caught by FindWindow!");
+        exit(DBG_FINDWINDOW);
+    }
+}
+
+void adbg_IsDebuggerPresent(void)
+{
+    BOOL found = FALSE;
+    found = IsDebuggerPresent();
+
+    if (found)
+    {
+        DBG_MSG(DBG_ISDEBUGGERPRESENT, "Caught by IsDebuggerPresent!");
+        exit(DBG_ISDEBUGGERPRESENT);
+    }
+}
+
+
+void adbg_NtGlobalFlagPEB(void)
+{
+    BOOL found = FALSE;
+
+#ifdef _WIN64
+    found = adbg_NtGlobalFlagPEBx64();
+#else
+    _asm
+    {
+        xor eax, eax;			// clear eax
+        mov eax, fs: [0x30] ;	// Reference start of the PEB
+        mov eax, [eax + 0x68];	// PEB+0x68 points to NtGlobalFlags
+        and eax, 0x00000070;	// check three flags
+        mov found, eax;			// Copy result into 'found'
+    }
+#endif
+
+    if (found)
+    {
+        DBG_MSG(DBG_NTGLOBALFLAGPEB, "Caught by NtGlobalFlag PEB check!");
+        exit(DBG_NTGLOBALFLAGPEB);
+    }
+}
+
+
+void adbg_NtQueryInformationProcess(void)
+{
+    HANDLE hProcess = INVALID_HANDLE_VALUE;
+    DWORD found = FALSE;
+    DWORD ProcessDebugPort = 0x07;	// 1st method; See MSDN for details
+    DWORD ProcessDebugFlags = 0x1F;	// 2nd method; See MSDN for details
+
+    // Get a handle to ntdll.dll so we can import NtQueryInformationProcess
+    HMODULE hNtdll = LoadLibraryW(L"ntdll.dll");
+    if (hNtdll == INVALID_HANDLE_VALUE || hNtdll == NULL)
+    {
+        return;
+    }
+
+    // Dynamically acquire the addres of NtQueryInformationProcess
+    _NtQueryInformationProcess NtQueryInformationProcess = NULL;
+    NtQueryInformationProcess = (_NtQueryInformationProcess)GetProcAddress(hNtdll, "NtQueryInformationProcess");
+
+    if (NtQueryInformationProcess == NULL)
+    {
+        return;
+    }
+
+    // Method 1: Query ProcessDebugPort
+    hProcess = GetCurrentProcess();
+    NTSTATUS status = NtQueryInformationProcess(hProcess, ProcessDebugPort, &found, sizeof(DWORD), NULL);
+
+    if (!status && found)
+    {
+        DBG_MSG(DBG_NTQUERYINFORMATIONPROCESS, "Caught by NtQueryInformationProcess, (ProcessDebugPort)!");
+        exit(DBG_NTQUERYINFORMATIONPROCESS);
+    }
+
+    // Method 2: Query ProcessDebugFlags
+    status = NtQueryInformationProcess(hProcess, ProcessDebugFlags, &found, sizeof(DWORD), NULL);
+
+    // The ProcessDebugFlags caused 'found' to be 1 if no debugger is found, so we check !found.
+    if (!status && !found)
+    {
+        DBG_MSG(DBG_NTQUERYINFORMATIONPROCESS, "Caught by NtQueryInformationProcess, (ProcessDebugFlags)!");
+        exit(DBG_NTQUERYINFORMATIONPROCESS);
+    }
+}
+
+
+void adbg_NtSetInformationThread(void)
+{
+    THREAD_INFORMATION_CLASS ThreadHideFromDebugger = (THREAD_INFORMATION_CLASS)0x11;
+
+    // Get a handle to ntdll.dll so we can import NtSetInformationThread
+    HMODULE hNtdll = LoadLibraryW(L"ntdll.dll");
+    if (hNtdll == INVALID_HANDLE_VALUE || hNtdll == NULL)
+    {
+        return;
+    }
+
+    // Dynamically acquire the addres of NtSetInformationThread and NtQueryInformationThread
+    _NtSetInformationThread NtSetInformationThread = NULL;
+    NtSetInformationThread = (_NtSetInformationThread)GetProcAddress(hNtdll, "NtSetInformationThread");
+
+    if (NtSetInformationThread == NULL)
+    {
+        return;
+    }
+
+    // There is nothing to check here after this call.
+    NtSetInformationThread(GetCurrentThread(), ThreadHideFromDebugger, 0, 0);
+}
+
+
+void adbg_DebugActiveProcess(const char* cpid)
+{
+    BOOL found = FALSE;
+    STARTUPINFOA si = { 0 };
+    PROCESS_INFORMATION pi = { 0 };
+    si.cb = sizeof(si);
+    TCHAR szPath[MAX_PATH];
+    DWORD exitCode = 0;
+
+    CreateMutex(NULL, FALSE, L"antidbg");
+    if (GetLastError() != ERROR_SUCCESS)
+    {
+        // If we get here we are in the child process
+        if (DebugActiveProcess((DWORD)atoi(cpid)))
+        {
+            // No debugger found.
+            return;
+        }
+        else
+        {
+            // Debugger found, exit child with a unique code we can check for.
+            exit(555);
+        }
+    }
+
+    // parent process
+    DWORD pid = GetCurrentProcessId();
+    GetModuleFileName(NULL, szPath, MAX_PATH);
+
+    char cmdline[MAX_PATH + 1 + sizeof(int)];
+    snprintf(cmdline, sizeof(cmdline), "%ws %d", szPath, pid);
+
+    // Start the child process. 
+    BOOL success = CreateProcessA(
+        NULL,		// path (NULL means use cmdline instead)
+        cmdline,	// Command line
+        NULL,		// Process handle not inheritable
+        NULL,		// Thread handle not inheritable
+        FALSE,		// Set handle inheritance to FALSE
+        0,			// No creation flags
+        NULL,		// Use parent's environment block
+        NULL,		// Use parent's starting directory 
+        &si,		// Pointer to STARTUPINFO structure
+        &pi);		// Pointer to PROCESS_INFORMATION structure
+
+    // Wait until child process exits and get the code
+    WaitForSingleObject(pi.hProcess, INFINITE);
+
+    // Check for our unique exit code
+    GetExitCodeProcess(pi.hProcess, &exitCode);
+    if (exitCode == 555)
+    {
+        found = TRUE;
+    }
+
+    // Close process and thread handles. 
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+
+    if (found)
+    {
+        DBG_MSG(DBG_DEBUGACTIVEPROCESS, "Caught by DebugActiveProcess!");
+        exit(DBG_DEBUGACTIVEPROCESS);
+    }
+}
+
+
+// =======================================================================
+// Timing Checks
+// These checks focus on comparison of time stamps between a portion
+// of code which is likely to be analyzed under a debugger. The goal
+// is to determine with high probability that a debugger is allowing
+// single step control, or that a breakpoint had been hit between
+// the time check locations.
+// =======================================================================
+
+void adbg_RDTSC(void)
+{
+    BOOL found = FALSE;
+
+    UINT64 timeA, timeB = 0;
+
+    //int timeUpperA, timeLowerA = 0;
+    //int timeUpperB, timeLowerB = 0;
+
+    // See antidbg.h for TimeKeeper def
+    TimeKeeper timeKeeper = { 0 };
+
+#ifdef _WIN64
+    // not yet implemented in x64
+    // adbg_RDTSCx64(timeKeeper);
+#else
+    _asm
+    {
+        // rdtsc stores result across EDX:EAX
+        rdtsc;
+        mov[timeKeeper.timeUpperA + 0x00], edx;
+        mov[timeKeeper.timeLowerA + 0x04], eax;
+
+        // Junk code to entice stepping through or a breakpoint
+        xor eax, eax;
+        mov eax, 5;
+        shr eax, 2;
+        sub eax, ebx;
+        cmp eax, ecx
+
+            rdtsc;
+        mov[timeKeeper.timeUpperB + 0x08], edx;
+        mov[timeKeeper.timeLowerB + 0x0C], eax;
+    }
+#endif
+
+    timeA = timeKeeper.timeUpperA;
+    timeA = (timeA << 32) | timeKeeper.timeLowerA;
+
+    timeB = timeKeeper.timeUpperB;
+    timeB = (timeB << 32) | timeKeeper.timeLowerB;
+
+    // 0x10000 is purely empirical and is based on the CPU clock speed
+    // This value should be change depending on the length and complexity of 
+    // code between each RDTSC operation.
+
+    if (timeB - timeA > 0x10000)
+    {
+        found = TRUE;
+    }
+
+    if (found)
+    {
+        DBG_MSG(DBG_RDTSC, "Caught by RDTSC!");
+        exit(DBG_RDTSC);
+    }
+}
+
+
+void adbg_QueryPerformanceCounter(void)
+{
+    BOOL found = FALSE;
+    LARGE_INTEGER t1;
+    LARGE_INTEGER t2;
+
+    QueryPerformanceCounter(&t1);
+
+#ifdef _WIN64
+    adbg_QueryPerformanceCounterx64();
+#else
+    // Junk or legit code.
+    _asm
+    {
+        xor eax, eax;
+        push eax;
+        push ecx;
+        pop eax;
+        pop ecx;
+        sub ecx, eax;
+        shl ecx, 4;
+    }
+#endif
+
+    QueryPerformanceCounter(&t2);
+
+    // 30 is an empirical value
+    if ((t2.QuadPart - t1.QuadPart) > 30)
+    {
+        found = TRUE;
+    }
+
+    if (found)
+    {
+        DBG_MSG(DBG_QUERYPERFORMANCECOUNTER, "Caught by QueryPerformanceCounter!");
+        exit(DBG_QUERYPERFORMANCECOUNTER);
+    }
+}
+
+
+void adbg_GetTickCount(void)
+{
+    BOOL found = FALSE;
+    DWORD t1;
+    DWORD t2;
+
+    t1 = GetTickCount();
+
+#ifdef _WIN64
+    adbg_GetTickCountx64();
+#else
+    // Junk or legit code.
+    _asm
+    {
+        xor eax, eax;
+        push eax;
+        push ecx;
+        pop eax;
+        pop ecx;
+        sub ecx, eax;
+        shl ecx, 4;
+    }
+#endif
+
+    t2 = GetTickCount();
+
+    // 30 milliseconds is an empirical value
+    if ((t2 - t1) > 30)
+    {
+        found = TRUE;
+    }
+
+    if (found)
+    {
+        DBG_MSG(DBG_GETTICKCOUNT, "Caught by GetTickCount!");
+        exit(DBG_GETTICKCOUNT);
+    }
+}
+
+
+// =======================================================================
+// CPU Checks
+// These checks focus on aspects of the CPU, including hardware break-
+// points, special interrupt opcodes, and flags.
+// =======================================================================
+
+void adbg_HardwareDebugRegisters(void)
+{
+    BOOL found = FALSE;
+    CONTEXT ctx = { 0 };
+    HANDLE hThread = GetCurrentThread();
+
+    ctx.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+    if (GetThreadContext(hThread, &ctx))
+    {
+        if ((ctx.Dr0 != 0x00) || (ctx.Dr1 != 0x00) || (ctx.Dr2 != 0x00) || (ctx.Dr3 != 0x00) || (ctx.Dr6 != 0x00) || (ctx.Dr7 != 0x00))
+        {
+            found = TRUE;
+        }
+    }
+
+    if (found)
+    {
+        DBG_MSG(DBG_HARDWAREDEBUGREGISTERS, "Caught by a Hardware Debug Register Check!");
+        exit(DBG_HARDWAREDEBUGREGISTERS);
+    }
+}
+
+
+void adbg_MovSS(void)
+{
+    BOOL found = FALSE;
+
+#ifdef _WIN64
+    // This method does not work on x64
+#else
+    _asm
+    {
+        push ss;
+        pop ss;
+        pushfd;
+        test byte ptr[esp + 1], 1;
+        jne fnd;
+        jmp end;
+    fnd:
+        mov found, 1;
+    end:
+        nop;
+    }
+#endif
+
+    if (found)
+    {
+        DBG_MSG(DBG_MOVSS, "Caught by a MOV SS Single Step Check!");
+        exit(DBG_MOVSS);
+    }
+}
+
+
+// =======================================================================
+// Exception Checks
+// These checks focus on exceptions that occur when under the control of 
+// a debugger. In several cases, there are certain exceptions that will
+// be thrown only when running under a debugger.
+// =======================================================================
+
+
+void adbg_CloseHandleException(void)
+{
+    HANDLE hInvalid = (HANDLE)0xBEEF; // an invalid handle
+    DWORD found = FALSE;
+
+    __try
+    {
+        CloseHandle(hInvalid);
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER)
+    {
+        found = TRUE;
+    }
+
+    if (found)
+    {
+        DBG_MSG(DBG_CLOSEHANDLEEXCEPTION, "Caught by an CloseHandle exception!");
+        exit(DBG_CLOSEHANDLEEXCEPTION);
+    }
+}
+
+
+void adbg_SingleStepException(void)
+{
+    DWORD found = TRUE;
+
+    // In this method we force an exception to occur. If it occurs
+    // outside of a debugger, the __except() handler is called setting
+    // found to FALSE. If the exception occurs inside of a debugger, the
+    // __except() will not be called (in certain cases) leading to
+    // found being TRUE.
+
+    __try
+    {
+#ifdef _WIN64
+        // Not yet implemented in x64
+#else
+        _asm
+        {
+            pushfd;						// save flag register
+            or byte ptr[esp + 1], 1;	// set trap flag in EFlags
+            popfd;						// restore flag register
+        }
+#endif
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER)
+    {
+        found = FALSE;
+    }
+
+    if (found)
+    {
+        DBG_MSG(DBG_SINGLESTEPEXCEPTION, "Caught by a Single Step Exception!");
+        exit(DBG_SINGLESTEPEXCEPTION);
+    }
+}
+
+
+void adbg_Int3(void)
+{
+    BOOL found = TRUE;
+
+    __try
+    {
+#ifdef _WIN64
+        // Not yet implemented in x64
+#else
+        _asm
+        {
+            int 3;	// 0xCC standard software breakpoint
+        }
+#endif
+    }
+
+    __except (EXCEPTION_EXECUTE_HANDLER)
+    {
+        found = FALSE;
+    }
+
+    if (found)
+    {
+        DBG_MSG(DBG_INT3CC, "Caught by a rogue INT 3!");
+        exit(DBG_INT3CC);
+    }
+}
+
+
+void adbg_PrefixHop(void)
+{
+    BOOL found = TRUE;
+
+    __try
+    {
+#ifdef _WIN64
+        // Not yet implemented in x64
+#else
+        _asm
+        {
+            __emit 0xF3;	// 0xF3 0x64 is the prefix 'REP'
+            __emit 0x64;
+            __emit 0xCC;	// this gets skipped over if being debugged
+        }
+#endif
+    }
+
+    __except (EXCEPTION_EXECUTE_HANDLER)
+    {
+        found = FALSE;
+    }
+
+    if (found)
+    {
+        DBG_MSG(DBG_PREFIXHOP, "Caught by a Prefix Hop!");
+        exit(DBG_PREFIXHOP);
+    }
+}
+
+
+void adbg_Int2D(void)
+{
+    BOOL found = TRUE;
+
+    __try
+    {
+#ifdef _WIN64
+        // Not yet implemented in x64
+#else
+        _asm
+        {
+            int 0x2D;	// kernel breakpoint
+        }
+#endif
+    }
+
+    __except (EXCEPTION_EXECUTE_HANDLER)
+    {
+        found = FALSE;
+    }
+
+    if (found)
+    {
+        DBG_MSG(DBG_NONE, "Caught by a rogue INT 2D!");
+        exit(DBG_NONE);
+    }
+}

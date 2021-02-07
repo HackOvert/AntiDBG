@@ -1,4 +1,5 @@
 #pragma once
+#pragma once
 
 #include <Windows.h>
 #include <Winternl.h>
@@ -34,15 +35,31 @@ enum DBG_CATCH
 	DBG_SINGLESTEPEXCEPTION = 0x4001,
 	DBG_INT3CC = 0x4002,
 	DBG_PREFIXHOP = 0x4003,
-
-} DBG_CATCH;
+};
 
 // Debugging messages
 void DBG_MSG(WORD dbg_code, char* message);
 
 // Dynamically resolved functions
-typedef NTSTATUS(__stdcall *_NtQueryInformationProcess)(_In_ HANDLE, _In_  unsigned int, _Out_ PVOID, _In_ ULONG, _Out_ PULONG);
-typedef NTSTATUS(__stdcall *_NtSetInformationThread)(_In_ HANDLE, _In_ THREAD_INFORMATION_CLASS, _In_ PVOID, _In_ ULONG);
+typedef NTSTATUS(__stdcall* _NtQueryInformationProcess)(_In_ HANDLE, _In_  unsigned int, _Out_ PVOID, _In_ ULONG, _Out_ PULONG);
+typedef NTSTATUS(__stdcall* _NtSetInformationThread)(_In_ HANDLE, _In_ THREAD_INFORMATION_CLASS, _In_ PVOID, _In_ ULONG);
+
+typedef struct timeKeeper {
+	int timeUpperA;
+	int timeLowerA;
+	int timeUpperB;
+	int timeLowerB;
+} TimeKeeper;
+
+#ifdef _WIN64
+extern "C"
+{
+	int adbg_BeingDebuggedPEBx64(void);
+	int adbg_NtGlobalFlagPEBx64(void);
+	void adbg_GetTickCountx64(void);
+	void adbg_QueryPerformanceCounterx64(void);
+};
+#endif
 
 // Memory
 void adbg_BeingDebuggedPEB(void);

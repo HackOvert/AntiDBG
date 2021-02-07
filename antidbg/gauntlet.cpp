@@ -1,22 +1,22 @@
 /*
- * Anti-DBG is a collection of anti-debugging tricks.
- * gauntlet.c is a sample application you can test under a debugger.
- * The anti-debugging methods are located in antidbg.c
+ * AntiDBG is a collection of Windows anti-debugging tricks.
+ * The "gaultlet" execuable is a sample application you can test under a debugger.
+ * Most anti-debugging methods are located in AntiDBG.cpp
+ * Any x64 anti-debugging methods using inline assembly have their assembly located in AntiDBG.asm (It's a Visual Studio thing...)
  */
 
-#include "antidbg.h"
-#include "gauntlet.h"
+#include "AntiDBG.h"
 
  // =======================================================================
 // The Gauntlet
 // =======================================================================
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
 	/*
 	This sample application calls all included anti-debugging methods
 	one after the other. Your goal is to start from the entry point,
 	and debug your way to the end without the debugger closing on you.
-	
+
 	Good Luck!
 	*/
 
