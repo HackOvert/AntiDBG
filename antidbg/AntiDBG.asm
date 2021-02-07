@@ -18,7 +18,7 @@ PUBLIC adbg_GetTickCountx64
 
 adbg_BeingDebuggedPEBx64 PROC
     xor rax, rax                ; clear eax
-    mov rax, fs: [30h]          ; reference start of the PEB
+    mov rax, gs:[60h]           ; reference start of the PEB
     mov rax, [rax + 02h]        ; PEB+2 points to BeingDebugged
     and rax, 0FFh               ; only reference one byte
     ret	                        ; return into 'rax' which puts BeingDebugged value into 'found'
@@ -26,8 +26,8 @@ adbg_BeingDebuggedPEBx64 ENDP
 
 adbg_NtGlobalFlagPEBx64 PROC
     xor rax, rax            ; clear eax
-    mov rax, fs: [30h]      ; Reference start of the PEB
-    mov rax, [rax + 68h]    ; PEB+0x68 points to NtGlobalFlags
+    mov rax, gs:[60h]       ; Reference start of the PEB
+    mov rax, [rax + 0BCh]   ; PEB+0x68 points to NtGlobalFlags
     and rax, 70h            ; check three flags
     ret	                    ; return into 'rax' which puts BeingDebugged value into 'found'
 adbg_NtGlobalFlagPEBx64 ENDP
@@ -40,6 +40,7 @@ adbg_QueryPerformanceCounterx64 PROC
     pop rcx                 ; code
     sub rcx, rax            ; use
     shl rcx, 4              ; whatever
+    ret
 adbg_QueryPerformanceCounterx64 ENDP
 
 adbg_GetTickCountx64 PROC
@@ -50,6 +51,7 @@ adbg_GetTickCountx64 PROC
     pop rcx                 ; code
     sub rcx, rax            ; use
     shl rcx, 4              ; whatever
+    ret
 adbg_GetTickCountx64 ENDP
 
 _TEXT ENDS

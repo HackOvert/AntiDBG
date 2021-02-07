@@ -66,16 +66,8 @@ void adbg_CheckWindowName(void)
 {
     BOOL found = FALSE;
     HANDLE hWindow = NULL;
-    const wchar_t* WindowClassNameIDA = L"Qt5QWindowIcon";	// IDA Pro
     const wchar_t* WindowClassNameOlly = L"OLLYDBG";		// OllyDbg
     const wchar_t* WindowClassNameImmunity = L"ID";			// Immunity Debugger
-
-    // Check for IDA Pro
-    hWindow = FindWindow(WindowClassNameIDA, 0);
-    if (hWindow)
-    {
-        found = TRUE;
-    }
 
     // Check for OllyDBG
     hWindow = FindWindow(WindowClassNameOlly, 0);
@@ -286,24 +278,22 @@ void adbg_RDTSC(void)
 {
     BOOL found = FALSE;
 
-    UINT64 timeA, timeB = 0;
-
-    //int timeUpperA, timeLowerA = 0;
-    //int timeUpperB, timeLowerB = 0;
-
-    // See antidbg.h for TimeKeeper def
-    TimeKeeper timeKeeper = { 0 };
-
+    
 #ifdef _WIN64
     // not yet implemented in x64
+    // TimeKeeper timeKeeper = { 0 };
     // adbg_RDTSCx64(timeKeeper);
 #else
+    int timeUpperA, timeLowerA = 0;
+    int timeUpperB, timeLowerB = 0;
+    int timeA, timeB = 0;
+
     _asm
     {
         // rdtsc stores result across EDX:EAX
         rdtsc;
-        mov[timeKeeper.timeUpperA + 0x00], edx;
-        mov[timeKeeper.timeLowerA + 0x04], eax;
+        mov [timeUpperA], edx;
+        mov [timeLowerA], eax;
 
         // Junk code to entice stepping through or a breakpoint
         xor eax, eax;
@@ -312,19 +302,18 @@ void adbg_RDTSC(void)
         sub eax, ebx;
         cmp eax, ecx
 
-            rdtsc;
-        mov[timeKeeper.timeUpperB + 0x08], edx;
-        mov[timeKeeper.timeLowerB + 0x0C], eax;
+        rdtsc;
+        mov [timeUpperB], edx;
+        mov [timeLowerB], eax;
     }
-#endif
 
-    timeA = timeKeeper.timeUpperA;
-    timeA = (timeA << 32) | timeKeeper.timeLowerA;
+    timeA = timeUpperA;
+    timeA = (timeA << 32) | timeLowerA;
 
-    timeB = timeKeeper.timeUpperB;
-    timeB = (timeB << 32) | timeKeeper.timeLowerB;
+    timeB = timeUpperB;
+    timeB = (timeB << 32) | timeLowerB;
 
-    // 0x10000 is purely empirical and is based on the CPU clock speed
+    // 0x100000 is purely empirical and is based on the CPU clock speed
     // This value should be change depending on the length and complexity of 
     // code between each RDTSC operation.
 
@@ -332,6 +321,8 @@ void adbg_RDTSC(void)
     {
         found = TRUE;
     }
+
+#endif
 
     if (found)
     {
@@ -524,6 +515,7 @@ void adbg_SingleStepException(void)
     {
 #ifdef _WIN64
         // Not yet implemented in x64
+        found = FALSE;
 #else
         _asm
         {
@@ -554,6 +546,7 @@ void adbg_Int3(void)
     {
 #ifdef _WIN64
         // Not yet implemented in x64
+        found = FALSE;
 #else
         _asm
         {
@@ -583,6 +576,7 @@ void adbg_PrefixHop(void)
     {
 #ifdef _WIN64
         // Not yet implemented in x64
+        found = FALSE;
 #else
         _asm
         {
@@ -614,6 +608,7 @@ void adbg_Int2D(void)
     {
 #ifdef _WIN64
         // Not yet implemented in x64
+        found = FALSE;
 #else
         _asm
         {

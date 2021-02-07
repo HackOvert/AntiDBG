@@ -2,7 +2,8 @@
  * AntiDBG is a collection of Windows anti-debugging tricks.
  * The "gaultlet" execuable is a sample application you can test under a debugger.
  * Most anti-debugging methods are located in AntiDBG.cpp
- * Any x64 anti-debugging methods using inline assembly have their assembly located in AntiDBG.asm (It's a Visual Studio thing...)
+ * Any x64 anti-debugging methods using inline assembly have their assembly 
+ * located in AntiDBG.asm
  */
 
 #include "AntiDBG.h"
