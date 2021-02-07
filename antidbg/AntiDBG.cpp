@@ -534,14 +534,13 @@ void adbg_SingleStepException(void)
     __try
     {
 #ifdef _WIN64
-        // TODO: Not yet implemented in x64
-        found = FALSE;
+        adbg_SingleStepExceptionx64();
 #else
         _asm
         {
-            pushfd;						// save flag register
-            or byte ptr[esp + 1], 1;	// set trap flag in EFlags
-            popfd;						// restore flag register
+            pushfd;						// save EFFLAGS register
+            or byte ptr[esp + 1], 1;	// set trap flag in EFFLAGS
+            popfd;						// restore EFFLAGS register
         }
 #endif
     }

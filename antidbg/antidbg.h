@@ -62,6 +62,7 @@ extern "C"
 	void adbg_RDTSCx64(TimeKeeper*);
 	void adbg_Int2Dx64(void);
 	void adbg_Int3x64(void);
+	void adbg_SingleStepExceptionx64(void);
 };
 #endif
 

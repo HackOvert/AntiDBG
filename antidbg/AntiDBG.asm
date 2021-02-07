@@ -18,6 +18,7 @@ PUBLIC adbg_GetTickCountx64
 PUBLIC adbg_RDTSCx64
 PUBLIC adbg_Int2Dx64
 PUBLIC adbg_Int3x64
+PUBLIC adbg_SingleStepExceptionx64
 
 adbg_BeingDebuggedPEBx64 PROC
     xor rax, rax                ; clear eax
@@ -85,6 +86,14 @@ adbg_Int2Dx64 ENDP
 adbg_Int3x64 PROC
     int 3                       ; 0xCC breakpoint
 adbg_Int3x64 ENDP
+
+adbg_SingleStepExceptionx64 PROC
+    pushfq                      ; save RFLAGS register
+    or byte ptr[rsp + 1], 1     ; set trap flag in RFLAGS
+    popfq                       ; restore RFLAGS register
+    ret;                        ; 
+adbg_SingleStepExceptionx64 ENDP
+
 
 _TEXT ENDS
  

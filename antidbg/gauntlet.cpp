@@ -28,11 +28,11 @@ int main(int argc, char* argv[])
 
 	Different debuggers will handle exceptions their own way by default. 
 	For example, some of our breakpoint exceptions will not work in x64dbg
-	under default detting.
+	under default setting.
 
 	Good Luck!
 	*/
-
+	
 	// -------------------------------------------------------------------
 	// -- Memory Checks --------------------------------------------------
 	// -------------------------------------------------------------------
