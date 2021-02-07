@@ -534,7 +534,7 @@ void adbg_SingleStepException(void)
     __try
     {
 #ifdef _WIN64
-        // Not yet implemented in x64
+        // TODO: Not yet implemented in x64
         found = FALSE;
 #else
         _asm
@@ -565,8 +565,7 @@ void adbg_Int3(void)
     __try
     {
 #ifdef _WIN64
-        // Not yet implemented in x64
-        found = FALSE;
+        adbg_Int3x64();
 #else
         _asm
         {
@@ -595,7 +594,7 @@ void adbg_PrefixHop(void)
     __try
     {
 #ifdef _WIN64
-        // Not yet implemented in x64
+        // TODO: Not yet implemented in x64
         found = FALSE;
 #else
         _asm
@@ -627,12 +626,12 @@ void adbg_Int2D(void)
     __try
     {
 #ifdef _WIN64
-        // Not yet implemented in x64
-        found = FALSE;
+        adbg_Int2Dx64();
 #else
         _asm
         {
-            int 0x2D;	// kernel breakpoint
+            int 0x2D;
+            nop;
         }
 #endif
     }

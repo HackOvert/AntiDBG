@@ -16,6 +16,8 @@ PUBLIC adbg_NtGlobalFlagPEBx64
 PUBLIC adbg_QueryPerformanceCounterx64
 PUBLIC adbg_GetTickCountx64
 PUBLIC adbg_RDTSCx64
+PUBLIC adbg_Int2Dx64
+PUBLIC adbg_Int3x64
 
 adbg_BeingDebuggedPEBx64 PROC
     xor rax, rax                ; clear eax
@@ -74,6 +76,15 @@ adbg_RDTSCx64 PROC
     mov [rcx + 18h], rax        ; TimeKeeper.timeLowerB
     ret
 adbg_RDTSCx64 ENDP
+
+adbg_Int2Dx64 PROC
+    int 2Dh                     ; interrupt 0x2D kernel breakpoint
+    nop                         ;
+adbg_Int2Dx64 ENDP
+
+adbg_Int3x64 PROC
+    int 3                       ; 0xCC breakpoint
+adbg_Int3x64 ENDP
 
 _TEXT ENDS
  

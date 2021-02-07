@@ -60,6 +60,8 @@ extern "C"
 	void adbg_GetTickCountx64(void);
 	void adbg_QueryPerformanceCounterx64(void);
 	void adbg_RDTSCx64(TimeKeeper*);
+	void adbg_Int2Dx64(void);
+	void adbg_Int3x64(void);
 };
 #endif
 

@@ -18,6 +18,18 @@ int main(int argc, char* argv[])
 	one after the other. Your goal is to start from the entry point,
 	and debug your way to the end without the debugger closing on you.
 
+	Make sure to try the gauntlet out in different debuggers:
+		- OllyDBG
+		- Immunity
+		- x64dbg
+		- WinDBG
+		- IDA Pro
+		- etc.
+
+	Different debuggers will handle exceptions their own way by default. 
+	For example, some of our breakpoint exceptions will not work in x64dbg
+	under default detting.
+
 	Good Luck!
 	*/
 
