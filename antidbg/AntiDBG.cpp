@@ -1,3 +1,4 @@
+#include <cinttypes>
 #include <Windows.h>
 #include "AntiDBG.h"
 
@@ -278,15 +279,34 @@ void adbg_RDTSC(void)
 {
     BOOL found = FALSE;
 
-    
 #ifdef _WIN64
-    // not yet implemented in x64
-    // TimeKeeper timeKeeper = { 0 };
-    // adbg_RDTSCx64(timeKeeper);
+    uint64_t timeA = 0;
+    uint64_t timeB = 0;
+    TimeKeeper timeKeeper = { 0 };
+    adbg_RDTSCx64(&timeKeeper);
+    
+    timeA = timeKeeper.timeUpperA;
+    timeA = (timeA << 32) | timeKeeper.timeLowerA;
+
+    timeB = timeKeeper.timeUpperB;
+    timeB = (timeB << 32) | timeKeeper.timeLowerB;
+
+    // 0x100000 is purely empirical and is based on the CPU clock speed
+    // This value should be change depending on the length and complexity of 
+    // code between each RDTSC operation.
+
+    if (timeB - timeA > 0x100000)
+    {
+        found = TRUE;
+    }
+
 #else
-    int timeUpperA, timeLowerA = 0;
-    int timeUpperB, timeLowerB = 0;
-    int timeA, timeB = 0;
+    int timeUpperA = 0;
+    int timeLowerA = 0;
+    int timeUpperB = 0;
+    int timeLowerB = 0;
+    int timeA = 0;
+    int timeB = 0;
 
     _asm
     {
@@ -300,7 +320,7 @@ void adbg_RDTSC(void)
         mov eax, 5;
         shr eax, 2;
         sub eax, ebx;
-        cmp eax, ecx
+        cmp eax, ecx;
 
         rdtsc;
         mov [timeUpperB], edx;

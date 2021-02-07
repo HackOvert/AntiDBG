@@ -1,6 +1,7 @@
 #pragma once
 #pragma once
 
+#include <cinttypes>
 #include <Windows.h>
 #include <Winternl.h>
 #include <stdio.h>
@@ -45,10 +46,10 @@ typedef NTSTATUS(__stdcall* _NtQueryInformationProcess)(_In_ HANDLE, _In_  unsig
 typedef NTSTATUS(__stdcall* _NtSetInformationThread)(_In_ HANDLE, _In_ THREAD_INFORMATION_CLASS, _In_ PVOID, _In_ ULONG);
 
 typedef struct timeKeeper {
-	int timeUpperA;
-	int timeLowerA;
-	int timeUpperB;
-	int timeLowerB;
+	uint64_t timeUpperA;
+	uint64_t timeLowerA;
+	uint64_t timeUpperB;
+	uint64_t timeLowerB;
 } TimeKeeper;
 
 #ifdef _WIN64
@@ -58,6 +59,7 @@ extern "C"
 	int adbg_NtGlobalFlagPEBx64(void);
 	void adbg_GetTickCountx64(void);
 	void adbg_QueryPerformanceCounterx64(void);
+	void adbg_RDTSCx64(TimeKeeper*);
 };
 #endif
 
