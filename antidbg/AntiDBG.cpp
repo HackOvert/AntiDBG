@@ -22,6 +22,16 @@ void DBG_MSG(WORD dbg_code, const char* message)
 // can reveal the presence of a debugger. 
 // =======================================================================
 
+/*
+ * Want to inspect the PEB structure? Launch gauntlet in WinDBG and run
+ * this command: dt ntdll!_PEB
+ * Example output:
+ * 0:000> dt ntdll!_PEB
+ * +0x000 InheritedAddressSpace : UChar
+ * +0x001 ReadImageFileExecOptions : UChar
+ * +0x002 BeingDebugged    : UChar        <-- This is what we're checking
+ * ...snip...
+ */
 void adbg_BeingDebuggedPEB(void)
 {
     BOOL found = FALSE;

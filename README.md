@@ -7,6 +7,10 @@ AntiDBG is a collection of Windows Anti Debugging techniques. The techniques are
   - Timing
   - Forced Exceptions
 
+### Demos!
+
+Want to see this stuff in action? Check out the [playlist on YouTube](https://www.youtube.com/playlist?list=PLxgggb3Nxh7s0uLlDinGVAsbi6o0pWv2X).
+
 ### AntiDBG API
 AntiDBG is written in C and requires only a single source file and header. Nearly all of these methods are designed to take no input and produce no output. They aim to be self-contained debugger checks that will automatically detach debuggers.
 
