@@ -31,7 +31,7 @@ adbg_BeingDebuggedPEBx64 ENDP
 adbg_NtGlobalFlagPEBx64 PROC
     xor rax, rax                ; clear eax
     mov rax, gs:[60h]           ; Reference start of the PEB
-    mov rax, [rax + 0BCh]       ; PEB+0x68 points to NtGlobalFlags
+    mov rax, [rax + 0BCh]       ; PEB+0xBC points to NtGlobalFlag
     and rax, 70h                ; check three flags
     ret	                        ; return into 'rax' which puts BeingDebugged value into 'found'
 adbg_NtGlobalFlagPEBx64 ENDP

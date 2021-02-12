@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 	// -------------------------------------------------------------------
 	adbg_IsDebuggerPresent();
 	adbg_CheckRemoteDebuggerPresent();
-	adbg_CheckWindowName();
+	adbg_CheckWindowClassName();
 	adbg_NtQueryInformationProcess();
 	adbg_BeingDebuggedPEB();
 	adbg_NtGlobalFlagPEB();

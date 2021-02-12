@@ -28,8 +28,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="AntiDBG.asm">
+    <CustomBuild Include="AntiDBG.asm">
       <Filter>Source Files</Filter>
-    </None>
+    </CustomBuild>
   </ItemGroup>
 </Project>

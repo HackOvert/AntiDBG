@@ -73,7 +73,7 @@ void adbg_CheckRemoteDebuggerPresent(void)
 }
 
 
-void adbg_CheckWindowName(void)
+void adbg_CheckWindowClassName(void)
 {
     BOOL found = FALSE;
     HANDLE hWindow = NULL;
@@ -113,7 +113,14 @@ void adbg_IsDebuggerPresent(void)
     }
 }
 
-
+/*
+ * Want to inspect the value of something in the PEB? Launch WinDBG,
+ * Attach to, or launch a process and run this command: 
+ * dt ntdll!_PEB @$peb -r
+ * Want more info on NtGlobalFlags? See these resources:
+ * https://www.aldeid.com/wiki/PEB-Process-Environment-Block/NtGlobalFlag
+ * https://www.geoffchappell.com/studies/windows/win32/ntdll/api/rtl/regutil/getntglobalflags.htm
+ */
 void adbg_NtGlobalFlagPEB(void)
 {
     BOOL found = FALSE;
@@ -125,8 +132,11 @@ void adbg_NtGlobalFlagPEB(void)
     {
         xor eax, eax;			// clear eax
         mov eax, fs: [0x30] ;	// Reference start of the PEB
-        mov eax, [eax + 0x68];	// PEB+0x68 points to NtGlobalFlags
-        and eax, 0x00000070;	// check three flags
+        mov eax, [eax + 0x68];	// PEB+0x68 points to NtGlobalFlag
+        and eax, 0x00000070;	// check three flags:
+                                //   FLG_HEAP_ENABLE_TAIL_CHECK   (0x10)
+                                //   FLG_HEAP_ENABLE_FREE_CHECK   (0x20)
+                                //   FLG_HEAP_VALIDATE_PARAMETERS (0x40)
         mov found, eax;			// Copy result into 'found'
     }
 #endif

@@ -69,7 +69,7 @@ extern "C"
 // Memory
 void adbg_BeingDebuggedPEB(void);
 void adbg_CheckRemoteDebuggerPresent(void);
-void adbg_CheckWindowName(void);
+void adbg_CheckWindowClassName(void);
 void adbg_IsDebuggerPresent(void);
 void adbg_NtGlobalFlagPEB(void);
 void adbg_NtQueryInformationProcess(void);
