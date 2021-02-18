@@ -152,13 +152,8 @@ void adbg_NtGlobalFlagPEB(void)
 void adbg_NtQueryInformationProcess(void)
 {
     HANDLE hProcess = INVALID_HANDLE_VALUE;
-    PVOID foundM1 = NULL;
-    PVOID foundM2 = NULL;
-    ULONG foundM3 = NULL;
+    PROCESS_BASIC_INFORMATION pProcBasicInfo = {0};
     ULONG returnLength = 0;
-    PROCESSINFOCLASS ProcessDebugPort = (PROCESSINFOCLASS)7;	        // 1st method; See MSDN for details (ProcessDebugPort  = 0x07 = 7)
-    PROCESSINFOCLASS ProcessDebugObjectHandle = (PROCESSINFOCLASS)30;	// 2nd method; See MSDN for details (ProcessDebugFlags = 0x1E = 30)
-    PROCESSINFOCLASS ProcessDebugFlags = (PROCESSINFOCLASS)31;	        // 2nd method; See MSDN for details (ProcessDebugFlags = 0x1F = 31)
     
     // Get a handle to ntdll.dll so we can import NtQueryInformationProcess
     HMODULE hNtdll = LoadLibraryW(L"ntdll.dll");
@@ -178,32 +173,30 @@ void adbg_NtQueryInformationProcess(void)
     
     hProcess = GetCurrentProcess();
     
-    // Method 1: Query ProcessDebugPort
-    NTSTATUS statusM1 = NtQueryInformationProcess(hProcess, ProcessDebugPort, &foundM1, sizeof(foundM1), &returnLength);
-    if (!statusM1 && foundM1)
+    // Note: There are many options for the 2nd parameter NtQueryInformationProcess
+    // (ProcessInformationClass) many of them are opaque. While we use ProcessBasicInformation (0), 
+    // we could also use:
+    //      ProcessDebugPort (7)
+    //      ProcessDebugObjectHandle (30)
+    //      ProcessDebugFlags (31)
+    // There are likely others. You can find many other options for ProcessInformationClass over at PINVOKE:
+    //      https://www.pinvoke.net/default.aspx/ntdll/PROCESSINFOCLASS.html
+    // Keep in mind that NtQueryInformationProcess will return different things depending on the ProcessInformationClass used.
+    // Many online articles using NtQueryInformationProcess for anti-debugging will use DWORD types for NtQueryInformationProcess 
+    // paramters. This is fine for 32-builds with some ProcessInformationClass values, but it will cause some to fail on 64-bit builds.
+    // In the event of a failure NtQueryInformationProcess will likely return STATUS_INFO_LENGTH_MISMATCH (0xC0000004). 
+
+    // Query ProcessDebugPort
+    NTSTATUS status = NtQueryInformationProcess(hProcess, ProcessBasicInformation, &pProcBasicInfo, sizeof(pProcBasicInfo), &returnLength);
+    PPEB pPeb = pProcBasicInfo.PebBaseAddress;
+    if (pPeb)
     {
-        DBG_MSG(DBG_NTQUERYINFORMATIONPROCESS, "Caught by NtQueryInformationProcess (ProcessDebugPort)!");
-        exit(DBG_NTQUERYINFORMATIONPROCESS);
+        if (NT_SUCCESS(status) && pPeb->BeingDebugged)
+        {
+            DBG_MSG(DBG_NTQUERYINFORMATIONPROCESS, "Caught by NtQueryInformationProcess (ProcessDebugPort)!");
+            exit(DBG_NTQUERYINFORMATIONPROCESS);
+        }
     }
-
-    // Method 2: Query ProcessDebugObjectHandle
-    NTSTATUS statusM2 = NtQueryInformationProcess(hProcess, ProcessDebugObjectHandle, &foundM2, sizeof(foundM2), &returnLength);
-
-    if (!statusM2 && foundM2)
-    {
-        DBG_MSG(DBG_NTQUERYINFORMATIONPROCESS, "Caught by NtQueryInformationProcess (ProcessDebugObjectHandle)!");
-        exit(DBG_NTQUERYINFORMATIONPROCESS);
-    }
-
-    // Method 3: Query ProcessDebugFlags
-    NTSTATUS statusM3 = NtQueryInformationProcess(hProcess, ProcessDebugFlags, &foundM3, sizeof(foundM3), &returnLength);
-
-    if (!statusM3 && !foundM3)
-    {
-        DBG_MSG(DBG_NTQUERYINFORMATIONPROCESS, "Caught by NtQueryInformationProcess (ProcessDebugFlags)!");
-        exit(DBG_NTQUERYINFORMATIONPROCESS);
-    }
-
 }
 
 
