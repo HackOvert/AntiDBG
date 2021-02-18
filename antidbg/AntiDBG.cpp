@@ -188,13 +188,15 @@ void adbg_NtQueryInformationProcess(void)
 
     // Query ProcessDebugPort
     NTSTATUS status = NtQueryInformationProcess(hProcess, ProcessBasicInformation, &pProcBasicInfo, sizeof(pProcBasicInfo), &returnLength);
-    PPEB pPeb = pProcBasicInfo.PebBaseAddress;
-    if (pPeb)
-    {
-        if (NT_SUCCESS(status) && pPeb->BeingDebugged)
+    if (NT_SUCCESS(status)) {
+        PPEB pPeb = pProcBasicInfo.PebBaseAddress;
+        if (pPeb)
         {
-            DBG_MSG(DBG_NTQUERYINFORMATIONPROCESS, "Caught by NtQueryInformationProcess (ProcessDebugPort)!");
-            exit(DBG_NTQUERYINFORMATIONPROCESS);
+            if (pPeb->BeingDebugged)
+            {
+                DBG_MSG(DBG_NTQUERYINFORMATIONPROCESS, "Caught by NtQueryInformationProcess (ProcessDebugPort)!");
+                exit(DBG_NTQUERYINFORMATIONPROCESS);
+            }
         }
     }
 }
