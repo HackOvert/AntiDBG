@@ -117,7 +117,7 @@ void adbg_IsDebuggerPresent(void)
  * Want to inspect the value of something in the PEB? Launch WinDBG,
  * Attach to, or launch a process and run this command: 
  * dt ntdll!_PEB @$peb -r
- * Want more info on NtGlobalFlags? See these resources:
+ * Want more info on NtGlobalFlag? See these resources:
  * https://www.aldeid.com/wiki/PEB-Process-Environment-Block/NtGlobalFlag
  * https://www.geoffchappell.com/studies/windows/win32/ntdll/api/rtl/regutil/getntglobalflags.htm
  */
@@ -152,10 +152,14 @@ void adbg_NtGlobalFlagPEB(void)
 void adbg_NtQueryInformationProcess(void)
 {
     HANDLE hProcess = INVALID_HANDLE_VALUE;
-    DWORD found = FALSE;
-    DWORD ProcessDebugPort = 0x07;	// 1st method; See MSDN for details
-    DWORD ProcessDebugFlags = 0x1F;	// 2nd method; See MSDN for details
-
+    PVOID foundM1 = NULL;
+    PVOID foundM2 = NULL;
+    ULONG foundM3 = NULL;
+    ULONG returnLength = 0;
+    PROCESSINFOCLASS ProcessDebugPort = (PROCESSINFOCLASS)7;	        // 1st method; See MSDN for details (ProcessDebugPort  = 0x07 = 7)
+    PROCESSINFOCLASS ProcessDebugObjectHandle = (PROCESSINFOCLASS)30;	// 2nd method; See MSDN for details (ProcessDebugFlags = 0x1E = 30)
+    PROCESSINFOCLASS ProcessDebugFlags = (PROCESSINFOCLASS)31;	        // 2nd method; See MSDN for details (ProcessDebugFlags = 0x1F = 31)
+    
     // Get a handle to ntdll.dll so we can import NtQueryInformationProcess
     HMODULE hNtdll = LoadLibraryW(L"ntdll.dll");
     if (hNtdll == INVALID_HANDLE_VALUE || hNtdll == NULL)
@@ -164,33 +168,42 @@ void adbg_NtQueryInformationProcess(void)
     }
 
     // Dynamically acquire the addres of NtQueryInformationProcess
-    _NtQueryInformationProcess NtQueryInformationProcess = NULL;
+    _NtQueryInformationProcess  NtQueryInformationProcess = NULL;
     NtQueryInformationProcess = (_NtQueryInformationProcess)GetProcAddress(hNtdll, "NtQueryInformationProcess");
 
     if (NtQueryInformationProcess == NULL)
     {
         return;
     }
-
-    // Method 1: Query ProcessDebugPort
+    
     hProcess = GetCurrentProcess();
-    NTSTATUS status = NtQueryInformationProcess(hProcess, ProcessDebugPort, &found, sizeof(DWORD), NULL);
-
-    if (!status && found)
+    
+    // Method 1: Query ProcessDebugPort
+    NTSTATUS statusM1 = NtQueryInformationProcess(hProcess, ProcessDebugPort, &foundM1, sizeof(foundM1), &returnLength);
+    if (!statusM1 && foundM1)
     {
-        DBG_MSG(DBG_NTQUERYINFORMATIONPROCESS, "Caught by NtQueryInformationProcess, (ProcessDebugPort)!");
+        DBG_MSG(DBG_NTQUERYINFORMATIONPROCESS, "Caught by NtQueryInformationProcess (ProcessDebugPort)!");
         exit(DBG_NTQUERYINFORMATIONPROCESS);
     }
 
-    // Method 2: Query ProcessDebugFlags
-    status = NtQueryInformationProcess(hProcess, ProcessDebugFlags, &found, sizeof(DWORD), NULL);
+    // Method 2: Query ProcessDebugObjectHandle
+    NTSTATUS statusM2 = NtQueryInformationProcess(hProcess, ProcessDebugObjectHandle, &foundM2, sizeof(foundM2), &returnLength);
 
-    // The ProcessDebugFlags caused 'found' to be 1 if no debugger is found, so we check !found.
-    if (!status && !found)
+    if (!statusM2 && foundM2)
     {
-        DBG_MSG(DBG_NTQUERYINFORMATIONPROCESS, "Caught by NtQueryInformationProcess, (ProcessDebugFlags)!");
+        DBG_MSG(DBG_NTQUERYINFORMATIONPROCESS, "Caught by NtQueryInformationProcess (ProcessDebugObjectHandle)!");
         exit(DBG_NTQUERYINFORMATIONPROCESS);
     }
+
+    // Method 3: Query ProcessDebugFlags
+    NTSTATUS statusM3 = NtQueryInformationProcess(hProcess, ProcessDebugFlags, &foundM3, sizeof(foundM3), &returnLength);
+
+    if (!statusM3 && !foundM3)
+    {
+        DBG_MSG(DBG_NTQUERYINFORMATIONPROCESS, "Caught by NtQueryInformationProcess (ProcessDebugFlags)!");
+        exit(DBG_NTQUERYINFORMATIONPROCESS);
+    }
+
 }
 
 

@@ -37,11 +37,11 @@ int main(int argc, char* argv[])
 	// -- Memory Checks --------------------------------------------------
 	// -------------------------------------------------------------------
 	adbg_IsDebuggerPresent();
-	adbg_CheckRemoteDebuggerPresent();
-	adbg_CheckWindowClassName();
-	adbg_NtQueryInformationProcess();
 	adbg_BeingDebuggedPEB();
 	adbg_NtGlobalFlagPEB();
+	adbg_CheckRemoteDebuggerPresent();
+	adbg_NtQueryInformationProcess();
+	adbg_CheckWindowClassName();
 	adbg_NtSetInformationThread();
 	adbg_DebugActiveProcess(argv[1]);
 
