@@ -42,6 +42,7 @@ int main(int argc, char* argv[])
 	adbg_CheckRemoteDebuggerPresent();
 	adbg_NtQueryInformationProcess();
 	adbg_CheckWindowClassName();
+	adbg_CheckWindowName();
 	adbg_NtSetInformationThread();
 	adbg_DebugActiveProcess(argv[1]);
 

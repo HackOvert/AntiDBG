@@ -72,6 +72,33 @@ void adbg_CheckRemoteDebuggerPresent(void)
     }
 }
 
+void adbg_CheckWindowName(void)
+{
+    BOOL found = FALSE;
+    HANDLE hWindow = NULL;
+    const wchar_t* WindowNameOlly = L"OllyDbg - [CPU]";
+    const wchar_t* WindowNameImmunity = L"Immunity Debugger - [CPU]";
+
+    // Check for OllyDBG class name
+    hWindow = FindWindow(NULL, WindowNameOlly);
+    if (hWindow)
+    {
+        found = TRUE;
+    }
+
+    // Check for Immunity class name
+    hWindow = FindWindow(NULL, WindowNameImmunity);
+    if (hWindow)
+    {
+        found = TRUE;
+    }
+
+    if (found)
+    {
+        DBG_MSG(DBG_FINDWINDOW, "Caught by FindWindow (WindowName)!");
+        exit(DBG_FINDWINDOW);
+    }
+}
 
 void adbg_CheckWindowClassName(void)
 {
@@ -80,15 +107,15 @@ void adbg_CheckWindowClassName(void)
     const wchar_t* WindowClassNameOlly = L"OLLYDBG";		// OllyDbg
     const wchar_t* WindowClassNameImmunity = L"ID";			// Immunity Debugger
 
-    // Check for OllyDBG
-    hWindow = FindWindow(WindowClassNameOlly, 0);
+    // Check for OllyDBG class name
+    hWindow = FindWindow(WindowClassNameOlly, NULL);
     if (hWindow)
     {
         found = TRUE;
     }
 
-    // Check for Immunity
-    hWindow = FindWindow(WindowClassNameImmunity, 0);
+    // Check for Immunity class name
+    hWindow = FindWindow(WindowClassNameImmunity, NULL);
     if (hWindow)
     {
         found = TRUE;
@@ -96,7 +123,7 @@ void adbg_CheckWindowClassName(void)
 
     if (found)
     {
-        DBG_MSG(DBG_FINDWINDOW, "Caught by FindWindow!");
+        DBG_MSG(DBG_FINDWINDOW, "Caught by FindWindow (ClassName)!");
         exit(DBG_FINDWINDOW);
     }
 }
