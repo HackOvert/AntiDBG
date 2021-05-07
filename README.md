@@ -6,6 +6,7 @@ AntiDBG is a collection of Windows Anti Debugging techniques. The techniques are
   - CPU
   - Timing
   - Forced Exceptions
+  - Other
 
 ### Demos!
 
@@ -41,3 +42,7 @@ Microsoft thought it would be a great idea to stop allowing developers to write 
 > I have more questions.
 
 I'd be happy to answer them! Please submit a GitHub issue with your questions and I'll try my best to help as soon as possible.
+
+### Thanks
+
+Thanks to the [contributors](https://github.com/HackOvert/AntiDBG/graphs/contributors) and everyone who has provided feedback in the past on this project.
