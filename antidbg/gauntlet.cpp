@@ -43,6 +43,7 @@ int main(int argc, char* argv[])
 	adbg_NtQueryInformationProcess();
 	adbg_CheckWindowClassName();
 	adbg_CheckWindowName();
+	adbg_ProcessFileName();
 	adbg_NtSetInformationThread();
 	adbg_DebugActiveProcess(argv[1]);
 
@@ -67,6 +68,11 @@ int main(int argc, char* argv[])
 	adbg_Int3();
 	adbg_Int2D();
 	adbg_PrefixHop();
+	
+	// -------------------------------------------------------------------
+	// -- Other ----------------------------------------------------------
+	// -------------------------------------------------------------------
+	adbg_CrashOllyDbg();
 
 	// Your goal is to get here in a debugger without modifying EIP yourself.
 	MessageBoxA(NULL, "Congratulations! You made it!", "You Win!", 0);

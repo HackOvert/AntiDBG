@@ -1,7 +1,5 @@
-#include <cinttypes>
-#include <Windows.h>
 #include "AntiDBG.h"
-
+#include <iostream>
 #define SHOW_DEBUG_MESSAGES
 
 // =======================================================================
@@ -13,6 +11,17 @@ void DBG_MSG(WORD dbg_code, const char* message)
     printf("[MSG-0x%X]: %s\n", dbg_code, message);
     MessageBoxA(NULL, message, "GAME OVER!", 0);
 #endif
+}
+
+
+
+void adbg_CrashOllyDbg(void)
+{
+    // crash OllyDbg v1.0 by exploit
+    __try {
+        OutputDebugString(TEXT("%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s"));
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) { ; }
 }
 
 
@@ -98,6 +107,35 @@ void adbg_CheckWindowName(void)
         DBG_MSG(DBG_FINDWINDOW, "Caught by FindWindow (WindowName)!");
         exit(DBG_FINDWINDOW);
     }
+}
+
+void adbg_ProcessFileName(void)
+{
+    // detect debugger by process file (for example: ollydbg.exe)
+    const wchar_t *debuggersFilename[6] = {L"cheatengine-x86_64.exe", L"ollydbg.exe", L"ida.exe", L"ida64.exe", L"radare2.exe", L"x64dbg.exe"};
+
+
+    wchar_t* processName;
+    PROCESSENTRY32W processInformation{ sizeof(PROCESSENTRY32W) };
+    HANDLE processList;
+
+    processList = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+    processInformation = { sizeof(PROCESSENTRY32W) };
+    if (!(Process32FirstW(processList, &processInformation)))
+        printf("[Warning] It is impossible to check process list.");
+    else
+    {
+        do
+        {
+            for (const wchar_t *debugger : debuggersFilename)
+            {
+                processName = processInformation.szExeFile;
+                if (wcscmp(debugger, processName) == 0)
+                    DBG_MSG(DBG_FINDWINDOW, "Caught by ProcessFile!");
+            }
+        } while (Process32NextW(processList, &processInformation));
+    }
+    CloseHandle(processList);
 }
 
 void adbg_CheckWindowClassName(void)
